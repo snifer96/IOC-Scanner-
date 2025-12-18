@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IOC Scanner v2.0 - VirusTotal Integration</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1><i class="fas fa-shield-alt"></i> IOC Scanner v2.0</h1>
+                <p class="subtitle">Advanced Threat Intelligence Platform</p>
+                <div class="header-info">
+                    <span><i class="fas fa-server"></i> Port: 9648</span>
+                    <span><i class="fas fa-database"></i> Cache: <span id="cache-count">0</span> items</span>
+                    <span><i class="fas fa-history"></i> Scans: <span id="scan-count">0</span></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Panel -->
+            <div class="left-panel">
+                <div class="scanner-card">
+                    <h2><i class="fas fa-search"></i> Scanner</h2>
+                    
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" data-tab="single">Single Scan</button>
+                        <button class="tab-btn" data-tab="batch">Batch Scan</button>
+                        <button class="tab-btn" data-tab="file">File Analyzer</button>
+                    </div>
+
+                    <!-- Single IOC Scan -->
+                    <div class="tab-content active" id="single-tab">
+                        <div class="form-group">
+                            <label for="scan-type">Scan Type:</label>
+                            <select id="scan-type" class="form-control">
+                                <option value="ip">IP Address</option>
+                                <option value="domain">Domain</option>
+                                <option value="hash">File Hash</option>
+                                <option value="url">URL</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="ioc-input">IOC Value:</label>
+                            <input type="text" id="ioc-input" class="form-control" 
+                                   placeholder="Enter IOC (e.g., 8.8.8.8, google.com, hash)">
+                        </div>
+                        
+                        <button id="scan-btn" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Scan Now
+                        </button>
+                    </div>
+
+                    <!-- Batch Scan -->
+                    <div class="tab-content" id="batch-tab">
+                        <div class="form-group">
+                            <label for="batch-iocs">Batch IOCs (one per line):</label>
+                            <textarea id="batch-iocs" class="form-control" rows="6"
+                                      placeholder="Format: type:value
+Examples:
+ip:8.8.8.8
+domain:google.com
+hash:d41d8cd98f00b204e9800998ecf8427e
+url:http://example.com"></textarea>
+                        </div>
+                        
+                        <button id="batch-scan-btn" class="btn btn-primary">
+                            <i class="fas fa-tasks"></i> Scan All
+                        </button>
+                    </div>
+
+                    <!-- File Hash Calculator -->
+                    <div class="tab-content" id="file-tab">
+                        <div class="form-group">
+                            <label for="file-input">Upload File:</label>
+                            <div class="file-upload-area" id="file-drop-area">
+                                <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                                <p>Drag & drop file here or click to browse</p>
+                                <input type="file" id="file-input" accept="*">
+                                <div class="file-info" id="file-info"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Hash Type:</label>
+                            <div class="hash-options">
+                                <label><input type="checkbox" name="hash-type" value="md5" checked> MD5</label>
+                                <label><input type="checkbox" name="hash-type" value="sha1" checked> SHA-1</label>
+                                <label><input type="checkbox" name="hash-type" value="sha256" checked> SHA-256</label>
+                            </div>
+                        </div>
+                        
+                        <button id="calculate-hash-btn" class="btn btn-secondary">
+                            <i class="fas fa-calculator"></i> Calculate Hashes
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Export Panel -->
+                <div class="export-card">
+                    <h2><i class="fas fa-download"></i> Export Results</h2>
+                    <div class="export-options">
+                        <button class="btn-export" data-format="csv">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                        <button class="btn-export" data-format="json">
+                            <i class="fas fa-file-code"></i> JSON
+                        </button>
+                        <button class="btn-export" data-format="html">
+                            <i class="fas fa-file-code"></i> HTML
+                        </button>
+                        <button class="btn-export" data-format="all">
+                            <i class="fas fa-file-archive"></i> All Formats
+                        </button>
+                    </div>
+                    <div class="export-status" id="export-status"></div>
+                </div>
+
+                <!-- Cache Panel -->
+                <div class="cache-card">
+                    <h2><i class="fas fa-database"></i> Cache Management</h2>
+                    <div class="cache-info">
+                        <p>Cached Items: <span id="cache-size">0</span></p>
+                        <p>Cache Hits: <span id="cache-hits">0</span></p>
+                    </div>
+                    <button id="clear-cache-btn" class="btn btn-warning">
+                        <i class="fas fa-trash"></i> Clear Cache
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel">
+                <!-- Results Display -->
+                <div class="results-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-poll"></i> Scan Results</h2>
+                        <div class="card-actions">
+                            <button id="clear-results" class="btn btn-small">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                            <button id="view-report" class="btn btn-small">
+                                <i class="fas fa-chart-bar"></i> Report
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="results-summary" id="results-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Total:</span>
+                            <span class="summary-value" id="total-scans">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">High:</span>
+                            <span class="summary-value threat-high" id="high-threats">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Medium:</span>
+                            <span class="summary-value threat-medium" id="medium-threats">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Low:</span>
+                            <span class="summary-value threat-low" id="low-threats">0</span>
+                        </div>
+                    </div>
+                    
+                    <div id="results-container" class="results-container">
+                        <div class="placeholder">
+                            <i class="fas fa-search fa-3x"></i>
+                            <p>Scan results will appear here</p>
+                            <small>Use the scanner on the left to start</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="stats-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-chart-bar"></i> Statistics</h2>
+                    </div>
+                    <div class="stats-container">
+                        <canvas id="stats-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="api-status">
+                <span id="api-status-indicator" class="status-indicator">
+                    <i class="fas fa-circle"></i> API Status: Checking...
+                </span>
+                <span class="api-info">
+                    <i class="fas fa-clock"></i> Response Time: <span id="response-time">-</span>ms
+                </span>
+            </div>
+            <div class="footer-links">
+                <a href="/report" target="_blank"><i class="fas fa-file-alt"></i> Full Report</a>
+                <a href="#" id="view-history"><i class="fas fa-history"></i> History</a>
+                <a href="#" id="view-help"><i class="fas fa-question-circle"></i> Help</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Result Template -->
+    <template id="result-template">
+        <div class="result-item">
+            <div class="result-header">
+                <div class="result-type-badge"></div>
+                <div class="result-info">
+                    <h3 class="result-title"></h3>
+                    <code class="result-value"></code>
+                </div>
+                <div class="result-threat"></div>
+            </div>
+            
+            <div class="result-stats">
+                <div class="stat-circle">
+                    <div class="circle-chart" data-value="0">
+                        <svg width="60" height="60">
+                            <circle class="circle-bg" cx="30" cy="30" r="25"></circle>
+                            <circle class="circle-progress" cx="30" cy="30" r="25"></circle>
+                        </svg>
+                        <span class="circle-value"></span>
+                    </div>
+                    <span class="circle-label">Malicious</span>
+                </div>
+                
+                <div class="stat-details">
+                    <div class="detail-row">
+                        <span>Suspicious:</span>
+                        <span class="detail-value suspicious"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Harmless:</span>
+                        <span class="detail-value harmless"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Undetected:</span>
+                        <span class="detail-value undetected"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Total Engines:</span>
+                        <span class="detail-value total-engines"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="result-meta">
+                <span><i class="far fa-calendar"></i> <span class="last-analysis"></span></span>
+                <span><i class="fas fa-star"></i> Reputation: <span class="reputation"></span></span>
+            </div>
+            
+            <div class="result-actions">
+                <button class="btn-action view-details">
+                    <i class="fas fa-info-circle"></i> Details
+                </button>
+                <button class="btn-action copy-value">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+                <button class="btn-action rescan">
+                    <i class="fas fa-redo"></i> Rescan
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <!-- Modal Templates -->
+    <div class="modal" id="details-modal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>Detailed Results</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre id="modal-content"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="history-modal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3><i class="fas fa-history"></i> Scan History</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="history-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
