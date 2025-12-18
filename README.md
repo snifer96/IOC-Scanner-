@@ -81,27 +81,6 @@ python app.py
 
 The application will start at: http://127.0.0.1:9648
 
-ioc-scanner-v2/
-│
-├── app.py                    # Main Flask application
-├── requirements.txt          # Python dependencies
-├── .env                      # Environment variables (create this)
-│
-├── templates/
-│   └── index.html           # Main web interface
-│
-├── static/
-│   ├── css/
-│   │   └── style.css        # Stylesheets
-│   └── js/
-│       └── script.js        # Frontend JavaScript
-│
-├── reports/                  # Generated reports (auto-created)
-├── uploads/                  # Temporary file uploads (auto-created)
-│
-└── README.md                 # This file
-
-
 Configuration Options
 Custom Port
 
