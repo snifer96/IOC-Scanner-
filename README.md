@@ -45,12 +45,10 @@ Prerequisites
 1. Clone the Repository
 bash
 
-git clone https://github.com/yourusername/ioc-scanner-v2.git
+git clone https://github.com/snifer96/IOC-Scanner-.git
 cd ioc-scanner-v2
 
 2. Create Virtual Environment
-bash
-
 # Windows
 python -m venv venv
 venv\Scripts\activate
@@ -60,8 +58,6 @@ python3 -m venv venv
 source venv/bin/activate
 
 3. Install Dependencies
-bash
-
 pip install -r requirements.txt
 
 4. Configure Environment Variables
@@ -74,16 +70,12 @@ VIRUSTOTAL_API_KEY=your_virustotal_api_key_here
 5. Get Your VirusTotal API Key
 
     Visit VirusTotal
-
     Sign up for a free account
-
     Navigate to your API key
-
     Copy your API key to the .env file
 
 Usage
 Starting the Application
-bash
 
 python app.py
 
